@@ -455,7 +455,8 @@ body {
   </div>
 
   <button id="btnLogin" aria-label="Login">Login</button>
-  <button id="btnEditUser" style="display:none;" aria-label="Edit Users">Edit User</button>
+<button id="btnKeepAwake" aria-label="Keep TV Awake" title="Click to keep TV awake">👁️</button>
+<button id="btnEditUser" style="display:none;" aria-label="Edit Users">Edit User</button>
 </div>
 
   <div id="trackerWrapper" aria-live="polite" role="region" aria-label="Project timelines"></div>
@@ -2742,14 +2743,18 @@ window.addEventListener('resize', () => {
   }, 100);
 });
 
-// ===================== PREVENT TV SLEEP - Silent Video Method =====================
+// ===================== PREVENT TV SLEEP - Manual Video Start =====================
 (function preventTVSleep() {
-  // Create a tiny, invisible video element that loops continuously
+  let videoStarted = false;
+  const btnKeepAwake = document.getElementById('btnKeepAwake');
+  
+  if (!btnKeepAwake) return;
+  
+  // Create video element (but don't play yet)
   const video = document.createElement('video');
   video.setAttribute('muted', '');
   video.setAttribute('playsinline', '');
   video.setAttribute('loop', '');
-  video.setAttribute('autoplay', '');
   video.style.position = 'fixed';
   video.style.top = '-10px';
   video.style.left = '-10px';
@@ -2759,7 +2764,6 @@ window.addEventListener('resize', () => {
   video.style.pointerEvents = 'none';
   video.style.zIndex = '-1';
   
-  // Create a simple black frame using canvas
   const canvas = document.createElement('canvas');
   canvas.width = 1;
   canvas.height = 1;
@@ -2767,22 +2771,35 @@ window.addEventListener('resize', () => {
   ctx.fillStyle = 'black';
   ctx.fillRect(0, 0, 1, 1);
   
-  // Capture canvas as video stream
-  const stream = canvas.captureStream(1); // 1 fps is enough
+  const stream = canvas.captureStream(1);
   video.srcObject = stream;
-  
-  // Append and play
   document.body.appendChild(video);
-  video.play().catch(e => console.log('Video autoplay blocked:', e));
+  
+  // Start video on button click
+  btnKeepAwake.addEventListener('click', () => {
+    if (!videoStarted) {
+      video.play()
+        .then(() => {
+          videoStarted = true;
+          btnKeepAwake.style.backgroundColor = '#198754'; // Green when active
+          btnKeepAwake.style.color = 'white';
+          console.log('✅ Keep awake video started');
+        })
+        .catch(e => {
+          console.log('Video start failed:', e);
+          btnKeepAwake.textContent = '❌';
+        });
+    }
+  });
   
   // Ensure video keeps playing if page regains focus
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && video.paused) {
+    if (videoStarted && document.visibilityState === 'visible' && video.paused) {
       video.play().catch(e => console.log('Video resume failed:', e));
     }
   });
   
-  console.log('✅ TV sleep prevention (silent video) active');
+  console.log('✅ Keep awake button ready (click 👁️ to activate)');
 })();
 
   /* ===================== LOGIN / USER PROFILE ===================== */
@@ -3034,6 +3051,12 @@ function applyPermissions() {
       lbl.style.opacity = "1";
     }
   });
+  // ALWAYS ensure keep awake button is enabled for all users
+  const btnKeepAwake = document.getElementById('btnKeepAwake');
+  if (btnKeepAwake) {
+    btnKeepAwake.style.display = 'inline-block';
+    btnKeepAwake.disabled = false;
+  }
 }
 function wireLoginSystem() {
   const btnLogin = document.getElementById('btnLogin');
@@ -3083,6 +3106,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireLoginSystem();
   renderUserList();
 });
+
 
 /* ===================== EDIT USER MODAL ===================== */
 function renderUserList() {
