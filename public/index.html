@@ -2742,6 +2742,49 @@ window.addEventListener('resize', () => {
   }, 100);
 });
 
+// ===================== PREVENT TV SLEEP - Silent Video Method =====================
+(function preventTVSleep() {
+  // Create a tiny, invisible video element that loops continuously
+  const video = document.createElement('video');
+  video.setAttribute('muted', '');
+  video.setAttribute('playsinline', '');
+  video.setAttribute('loop', '');
+  video.setAttribute('autoplay', '');
+  video.style.position = 'fixed';
+  video.style.top = '-10px';
+  video.style.left = '-10px';
+  video.style.width = '1px';
+  video.style.height = '1px';
+  video.style.opacity = '0.01';
+  video.style.pointerEvents = 'none';
+  video.style.zIndex = '-1';
+  
+  // Create a simple black frame using canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, 1, 1);
+  
+  // Capture canvas as video stream
+  const stream = canvas.captureStream(1); // 1 fps is enough
+  video.srcObject = stream;
+  
+  // Append and play
+  document.body.appendChild(video);
+  video.play().catch(e => console.log('Video autoplay blocked:', e));
+  
+  // Ensure video keeps playing if page regains focus
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && video.paused) {
+      video.play().catch(e => console.log('Video resume failed:', e));
+    }
+  });
+  
+  console.log('✅ TV sleep prevention (silent video) active');
+})();
+
   /* ===================== LOGIN / USER PROFILE ===================== */
 // Restore session if it exists
 let loggedInUser = localStorage.getItem("loggedInUser");
